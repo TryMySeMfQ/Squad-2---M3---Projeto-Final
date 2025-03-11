@@ -1,0 +1,73 @@
+Table PreferênciaAcessibilidade {
+  UsuarioID int [pk, ref: > Usuário.UsuárioID]
+  AltoContraste boolean
+  AudioDescricao boolean
+  AjusteFonte varchar(255)
+}
+
+
+Table Usuário {
+  UsuárioID int [pk]
+  Nome varchar(255)
+  Email varchar(255)
+  Senha varchar(255)
+  Localizacao varchar(255)
+  PCD enum('Sim', 'Não')
+  PreferenciaAcessibilidadeID int [ref: > PreferênciaAcessibilidade.UsuarioID]
+}
+
+Table Denúncia {
+  DenúnciaID int [pk]
+  Descrição text
+  Localizacao varchar(255)
+  Status enum('Aberta', 'Em Análise', 'Resolvida')
+  Foto text
+  ID_Usuario int [ref: > Usuário.UsuárioID]
+  CategoriaID int [ref: > Categoria.CategoriaID]
+  AutoridadeID int [ref: > Autoridade.AutoridadeID]
+}
+
+Table Categoria {
+  CategoriaID int [pk]
+  Nome varchar(255)
+  Descricao text
+  Nivel_Urgencia enum('Baixo', 'Médio', 'Alto')
+}
+
+Table Autoridade {
+    AutoridadeID int [pk]
+    Nome varchar(255)
+    Email varchar(255)
+    Senha varchar(255)
+    Tipo_Autoridade varchar(100)
+}
+
+Table HistóricoStatus {
+  HistóricoStatusID int [pk]
+  Status enum('Aberta', 'Em Análise', 'Resolvida')
+  Data_Hora timestamp
+  DenúnciaID int [ref: > Denúncia.DenúnciaID]
+  AutoridadeID int [ref: > Autoridade.AutoridadeID]
+}
+
+Table Comentário {
+    ComentárioID int [pk]
+    Texto text
+    DenúnciaID int [ref: > Denúncia.DenúnciaID]
+    UsuarioID int [ref: > Usuário.UsuárioID]
+}
+
+Table Voto {
+    VotoID int [pk]
+    Status ENUM('Upvote', 'Downvote')
+    DenúnciaID int [ref: > Denúncia.DenúnciaID]
+    UsuarioID int [ref: > Usuário.UsuárioID]
+}
+
+Table Notificação {
+    NotificaçãoID int [pk]
+    UsuarioID int [ref: > Usuário.UsuárioID]
+    Mensagem text
+    Data_Hora timestamp
+    Lida boolean
+}
