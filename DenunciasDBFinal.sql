@@ -330,3 +330,81 @@ LEFT JOIN Votos V ON U.ID_Usuario = V.ID_Usuario AND V.Status = 'Downvote'
 GROUP BY U.Nome
 ORDER BY Total_Downvotes DESC
 LIMIT 5;
+
+-- Trigger para atualizar o histórico de status da denúncia
+DELIMITER //
+
+CREATE TRIGGER Atualizar_Historico_Status
+AFTER UPDATE ON Denuncia
+FOR EACH ROW
+BEGIN
+    IF OLD.Status != NEW.Status THEN
+        INSERT INTO Historico_Status (ID_Denuncia, ID_Autoridade, Status)
+        VALUES (NEW.ID_Denuncia, NEW.ID_Autoridade, NEW.Status);
+    END IF;
+END //
+
+DELIMITER ;
+
+-- Trigger para adicionar notificação ao usuário
+DELIMITER //
+
+CREATE TRIGGER Notificar_Usuario_Denuncia
+AFTER UPDATE ON Denuncia
+FOR EACH ROW
+BEGIN
+    IF NEW.Status = 'Resolvida' THEN
+        INSERT INTO Notificacao (ID_Usuario, ID_Denuncia, Mensagem, Tipo)
+        VALUES (NEW.ID_Usuario, NEW.ID_Denuncia, CONCAT('Sua denúncia "', NEW.Descricao, '" foi resolvida.'), 'Informativa');
+    END IF;
+END //
+
+DELIMITER ;
+
+-- Trigger para atualizar contagem de votos ao inserir/atualizar voto
+DELIMITER //
+
+CREATE TRIGGER Atualizar_Votacao_Denuncia
+AFTER INSERT ON Votos
+FOR EACH ROW
+BEGIN
+    IF NEW.Status = 'Upvote' THEN
+        UPDATE Denuncia 
+        SET Upvotes = Upvotes + 1
+        WHERE ID_Denuncia = NEW.ID_Denuncia;
+    END IF;
+
+    IF NEW.Status = 'Downvote' THEN
+        UPDATE Denuncia 
+        SET Downvotes = Downvotes + 1
+        WHERE ID_Denuncia = NEW.ID_Denuncia;
+    END IF;
+END //
+
+DELIMITER ;
+
+-- Trigger para registrar a data de criação de comentário
+DELIMITER //
+
+CREATE TRIGGER Registrar_Data_Comentario
+BEFORE INSERT ON Comentario
+FOR EACH ROW
+BEGIN
+    SET NEW.Data_Hora = NOW();
+END //
+
+DELIMITER ;
+
+-- Trigger para impedir deletação de denúncia resolvida
+DELIMITER //
+
+CREATE TRIGGER Impedir_Delete_Denuncia_Resolvida
+BEFORE DELETE ON Denuncia
+FOR EACH ROW
+BEGIN
+    IF OLD.Status = 'Resolvida' THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Não é possível deletar uma denúncia resolvida.';
+    END IF;
+END //
+
+DELIMITER ;
